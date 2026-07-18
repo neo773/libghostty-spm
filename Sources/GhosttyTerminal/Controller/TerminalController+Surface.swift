@@ -130,6 +130,24 @@ extension TerminalController {
         platformSetup: (inout ghostty_surface_config_s) -> Void
     ) -> ghostty_surface_t? {
         platformSetup(&config)
+
+        // `initial_input`, like `working_directory`, only needs to outlive
+        // `ghostty_surface_new`, which copies it during surface init.
+        guard let initialInput = configuration.initialInput else {
+            return spawnSurface(app: app, bridge: bridge, configuration: configuration, config: &config)
+        }
+        return initialInput.withCString { ptr in
+            config.initial_input = ptr
+            return spawnSurface(app: app, bridge: bridge, configuration: configuration, config: &config)
+        }
+    }
+
+    private func spawnSurface(
+        app: ghostty_app_t,
+        bridge: TerminalCallbackBridge,
+        configuration: TerminalSurfaceOptions,
+        config: inout ghostty_surface_config_s
+    ) -> ghostty_surface_t? {
         guard let surface = ghostty_surface_new(app, &config) else {
             return nil
         }

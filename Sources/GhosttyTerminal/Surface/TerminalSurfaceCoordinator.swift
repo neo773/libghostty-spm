@@ -135,6 +135,11 @@ final class TerminalSurfaceCoordinator {
         let newSurface = TerminalSurface(rawSurface)
         surface = newSurface
         newSurface.setOcclusion(effectiveSurfaceVisible)
+        // Apply the remembered focus state to the freshly created surface. A new tab can
+        // become first responder (setting `isSurfaceFocused`) before its view has a valid
+        // size, so the surface does not yet exist when `setFocus` runs; without this the
+        // surface would be born unfocused and stay that way until the user clicked it.
+        newSurface.setFocus(isSurfaceFocused)
         controller.shouldProcessWakeup = { [weak self] in
             self?.canRenderFrame == true
         }

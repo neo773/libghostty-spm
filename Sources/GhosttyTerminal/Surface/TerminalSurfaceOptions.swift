@@ -17,6 +17,12 @@ public struct TerminalSurfaceOptions: Sendable {
     /// embedding hosts tag a surface (e.g. `MYAPP_PANE=<uuid>`) and correlate
     /// externally observed processes back to it.
     public var envVars: [String: String]
+    /// Text fed to the child process (exec backend) as stdin the moment it is
+    /// spawned, via `ghostty_surface_config_s.initial_input`. Unlike typing into
+    /// the surface after it renders, this is delivered by libghostty at spawn
+    /// time, so it cannot race surface/render readiness. Include a trailing
+    /// newline to submit a command. Ignored by the in-memory backend.
+    public var initialInput: String?
     public var context: TerminalSurfaceContext
 
     public init(
@@ -24,12 +30,14 @@ public struct TerminalSurfaceOptions: Sendable {
         fontSize: Float? = nil,
         workingDirectory: String? = nil,
         envVars: [String: String] = [:],
+        initialInput: String? = nil,
         context: TerminalSurfaceContext = .window
     ) {
         self.backend = backend
         self.fontSize = fontSize
         self.workingDirectory = workingDirectory
         self.envVars = envVars
+        self.initialInput = initialInput
         self.context = context
     }
 
@@ -37,6 +45,7 @@ public struct TerminalSurfaceOptions: Sendable {
         fontSize == other.fontSize
             && workingDirectory == other.workingDirectory
             && envVars == other.envVars
+            && initialInput == other.initialInput
             && context == other.context
             && backend.isEquivalent(to: other.backend)
     }

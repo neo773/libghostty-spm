@@ -18,6 +18,14 @@ struct TerminalViewRepresentable {
     let controller: TerminalController
     let configuration: TerminalSurfaceOptions
     let focusBinding: TerminalFocusBinding?
+    /// When false the surface is marked occluded and its display link stopped, so an
+    /// off-screen pane (hidden tab / workspace) stops rendering while its PTY keeps
+    /// running. Defaults to true so callers that don't opt in are unaffected.
+    var isVisible: Bool = true
+    /// Whether this pane should hold keyboard focus, driven by the host's own active-pane
+    /// state (not SwiftUI `@FocusState`, which does not reach a wrapped NSView). Drives an
+    /// AppKit `makeFirstResponder` on the terminal view — the pattern upstream Ghostty uses.
+    var shouldFocus: Bool = false
 
     func configureView(_ view: TerminalView, initial: Bool) {
         if initial {

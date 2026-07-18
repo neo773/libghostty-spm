@@ -19,6 +19,10 @@
         var lastPointerSelectionRect: CGRect?
         var pendingSelectionMenuPoint: CGPoint?
         var onFocusChange: ((Bool) -> Void)?
+        /// Whether this view should hold keyboard focus, as reported by the SwiftUI focus
+        /// binding. Read again in `viewDidMoveToWindow` so a focus request made before the
+        /// view had a window (e.g. a freshly created tab) is re-applied once it does.
+        var focusIntent: (() -> Bool)?
 
         open weak var delegate: (any TerminalSurfaceViewDelegate)? {
             get { core.delegate }

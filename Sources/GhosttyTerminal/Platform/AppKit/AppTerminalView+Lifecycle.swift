@@ -66,6 +66,13 @@
                 core.startDisplayLink()
                 core.requestImmediateTick()
 
+                // A new tab requests focus before its view is in a window, so the initial
+                // `synchronizeFocus` no-ops and nothing re-runs it once attached. Re-issue
+                // the request here using the same async retry/backoff pattern as upstream
+                // Ghostty's `moveFocus`, which is robust to the view not being fully in the
+                // window and to SwiftUI's in-flight focus pass.
+                requestFocusIfIntended()
+
                 NotificationCenter.default.addObserver(
                     self,
                     selector: #selector(windowDidBecomeKey),
@@ -104,6 +111,35 @@
                 && window?.firstResponder === self
             core.setFocus(focused)
             onFocusChange?(focused)
+            // Belt-and-suspenders (mirrors upstream): if the window became key with nothing
+            // holding first responder, claim it for the pane that should be focused.
+            if !focused, window?.firstResponder === window {
+                requestFocusIfIntended()
+            }
+        }
+
+        /// Make this view first responder if its focus binding says it should be focused,
+        /// retrying with backoff while the view is not yet in a window. Mirrors upstream
+        /// Ghostty's `moveFocus`: run async so it doesn't fight SwiftUI's focus pass, and
+        /// survive the new-tab case where the view attaches to its window a beat later.
+        func requestFocusIfIntended(retriesRemaining: Int = 5, delay: TimeInterval = 0.05) {
+            guard focusIntent?() == true else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let self, self.focusIntent?() == true else { return }
+                guard let window = self.window else {
+                    guard retriesRemaining > 0 else { return }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                        self?.requestFocusIfIntended(
+                            retriesRemaining: retriesRemaining - 1,
+                            delay: min(delay * 2, 0.5)
+                        )
+                    }
+                    return
+                }
+                if window.firstResponder !== self {
+                    window.makeFirstResponder(self)
+                }
+            }
         }
 
         @objc func windowDidResignKey(_: Notification) {

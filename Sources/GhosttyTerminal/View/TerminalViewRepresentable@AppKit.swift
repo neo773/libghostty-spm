@@ -16,7 +16,12 @@
             view.onFocusChange = { focused in
                 focusBinding.setFocused(focused)
             }
-            Self.synchronizeFocus(view, with: focusBinding)
+            // Focus intent comes from the host's active-pane state, not the SwiftUI focus
+            // binding — the latter never routes into a wrapped NSView, so it always read
+            // false and the terminal never became first responder without a click.
+            view.focusIntent = { [shouldFocus] in shouldFocus }
+            view.setSurfaceVisible(isVisible)
+            view.requestFocusIfIntended()
             return view
         }
 
@@ -25,7 +30,9 @@
             view.onFocusChange = { focused in
                 focusBinding.setFocused(focused)
             }
-            Self.synchronizeFocus(view, with: focusBinding)
+            view.focusIntent = { [shouldFocus] in shouldFocus }
+            view.setSurfaceVisible(isVisible)
+            view.requestFocusIfIntended()
         }
 
         static func dismantleNSView(_ view: TerminalView, coordinator _: ()) {
