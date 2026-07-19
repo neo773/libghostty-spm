@@ -100,6 +100,9 @@
             core.onPostRender = { [weak self] in
                 self?.enforceMetalLayerScale()
             }
+
+            // Accept dropped files (Finder) and text; handled in AppTerminalView+DragDrop.
+            registerForDraggedTypes([.string, .fileURL])
         }
 
         open func selectionMenuPoint(at point: CGPoint) -> CGPoint? {
